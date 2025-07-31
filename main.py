@@ -76,6 +76,13 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# Fallback header middleware: ensure Access-Control-Allow-Origin on every response
+@app.middleware("http")
+async def add_cors_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
 # Add trusted host middleware for production
 if settings.ENVIRONMENT == "production":
     app.add_middleware(

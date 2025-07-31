@@ -1,0 +1,33 @@
+runtime: nodejs18
+service: frontend
+
+# Build the React app for production
+build_command: cd frontend && npm ci && npm run build
+
+# Serve static files
+handlers:
+# Handle static assets
+- url: /static
+  static_dir: frontend/build/static
+  secure: always
+
+# Handle service worker
+- url: /service-worker.js
+  static_files: frontend/build/service-worker.js
+  upload: frontend/build/service-worker.js
+  secure: always
+
+# Handle manifest and favicon
+- url: /(.*\.(ico|png|svg|webp|jpg|jpeg|gif|css|js|json|woff2?|ttf|eot))$
+  static_files: frontend/build/\1
+  upload: frontend/build/.*\.(ico|png|svg|webp|jpg|jpeg|gif|css|js|json|woff2?|ttf|eot)$
+  secure: always
+
+# Catch all handler for React Router
+- url: /.*
+  static_files: frontend/build/index.html
+  upload: frontend/build/index.html
+  secure: always
+
+env_variables:
+  REACT_APP_API_URL: "https://biometric-auth-system.uc.r.appspot.com/api/v1"

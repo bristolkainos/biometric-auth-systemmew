@@ -1,0 +1,20 @@
+runtime: nodejs20
+service: frontend
+
+# Use Express server to serve the React build
+entrypoint: node server.js
+
+# Environment variables for React runtime
+env_variables:
+  REACT_APP_API_URL: "https://biometric-auth-system.uc.r.appspot.com/api/v1"
+
+# Basic scaling
+automatic_scaling:
+  min_instances: 2
+  max_instances: 20
+
+# Increase resources for frontend (if supported by environment)
+resources:
+  cpu: 2
+  memory_gb: 4
+  disk_size_gb: 10

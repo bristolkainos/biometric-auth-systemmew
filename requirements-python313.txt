@@ -1,0 +1,36 @@
+# Core Web Framework
+fastapi>=0.104.1  # Compatible with Python 3.13
+uvicorn[standard]>=0.24.0  # Compatible with Python 3.13
+gunicorn>=21.2.0  # Compatible with Python 3.13
+
+# Database
+sqlalchemy>=2.0.23  # Compatible with Python 3.13
+psycopg2-binary>=2.9.9  # Compatible with Python 3.13
+
+# Data Validation and Settings
+pydantic>=2.5.0  # Compatible with Python 3.13
+pydantic-settings>=2.1.0  # Compatible with Python 3.13
+
+# Authentication and Security
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+python-multipart>=0.0.6
+
+# Essential ML and Image Processing
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch>=2.2.0  # Required for Python 3.13 compatibility
+torchvision>=0.17.0  # Required for Python 3.13 compatibility
+opencv-python-headless>=4.8.1.78
+numpy>=1.26.0  # Required for Python 3.13 compatibility
+pillow>=10.1.0
+
+# Development
+python-dotenv>=1.0.0
+httpx>=0.25.2
+
+# Note: Some packages might need to be installed from source for Python 3.13.5
+# If you encounter any issues, try installing them in this order:
+# 1. numpy
+# 2. torch and torchvision
+# 3. opencv-python-headless
+# 4. The rest of the packages

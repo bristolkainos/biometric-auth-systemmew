@@ -1,0 +1,18 @@
+# GCP deployment ignore file
+.venv/
+node_modules/
+frontend/
+test_*/
+*.log
+*.pyc
+__pycache__/
+.env*
+.git/
+deploy*.ps1
+deploy*.sh
+uploads/
+test_biometric_images/
+*.md
+docs/
+.vscode/
+*.tmp

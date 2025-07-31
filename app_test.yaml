@@ -1,0 +1,26 @@
+runtime: python310
+service: default
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 5
+  target_cpu_utilization: 0.7
+
+resources:
+  cpu: 2
+  memory_gb: 4
+  disk_size_gb: 10
+
+entrypoint: gunicorn --bind :$PORT --workers 4 --worker-class uvicorn.workers.UvicornWorker --timeout 300 main_test:app
+
+env_variables:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+
+handlers:
+- url: /health
+  script: auto
+  secure: always
+
+- url: /.*
+  script: auto

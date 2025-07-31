@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: biometric_db
+    environment:
+      POSTGRES_DB: biometric_auth
+      POSTGRES_USER: biometric_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password_123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - biometric_network
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: biometric_backend
+    environment:
+      DATABASE_URL: postgresql://biometric_user:${DB_PASSWORD:-secure_password_123}@postgres:5432/biometric_auth
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here}
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-here}
+      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - ./models:/app/models  # For your pretrained models
+    networks:
+      - biometric_network
+
+  # Frontend React App
+  frontend:
+    build: ./frontend
+    container_name: biometric_frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - biometric_network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: biometric_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - biometric_network
+
+volumes:
+  postgres_data:
+
+networks:
+  biometric_network:
+    driver: bridge 

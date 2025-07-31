@@ -1,0 +1,26 @@
+{
+  "name": "biometric-auth-system",
+  "version": "1.0.0",
+  "description": "Biometric Authentication System Startup Scripts",
+  "main": "index.js",
+  "scripts": {
+    "start": "cd frontend && npm start",
+    "dev": "cd frontend && npm start",
+    "backend": "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "frontend": "cd frontend && npm start",
+    "install-all": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
+    "start-backend": "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "start-frontend": "cd frontend && npm start"
+  },
+  "keywords": [
+    "biometric",
+    "authentication",
+    "fastapi",
+    "react"
+  ],
+  "author": "Biometric Auth Team",
+  "license": "MIT",
+  "dependencies": {
+    "firebase-tools": "^14.11.0"
+  }
+}

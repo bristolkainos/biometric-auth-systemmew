@@ -1,0 +1,61 @@
+# Railway Deployment Ignore
+# Exclude large files and directories to reduce deployment size
+
+# Frontend files (deploy separately)
+frontend/
+*.md
+*.MD
+
+# Development files
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Large test files
+test_biometric_images/
+uploads/
+models/
+
+# Documentation
+docs/
+*.pdf
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+build/
+dist/
+
+# Database files (using Railway PostgreSQL)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files (variables set in Railway)
+.env.local
+.env.development
+.env.test
+
+# Git
+.git/
+.gitignore
+
+# Deployment scripts
+deploy*.ps1
+deploy*.sh
+deploy*.bat
+
+# Biometric test data
+test_*.py
+*_test.py

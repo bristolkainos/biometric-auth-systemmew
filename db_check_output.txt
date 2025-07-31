@@ -1,0 +1,29 @@
+=== TABLES IN DATABASE ===
+Table: admin_users
+Table: users
+Table: login_attempts
+Table: biometric_data
+
+=== USERS TABLE ===
+ID: 1, Username: testuser, Email: test@example.com
+ID: 2, Username: kainos, Email: gabinsamo@gmail.com
+ID: 23, Username: bao, Email: green@gmail.com
+ID: 3, Username: bristol, Email: bris@gmail.com
+ID: 18, Username: musa, Email: iba@gmail.com
+ID: 20, Username: princess, Email: prince@gmail.com
+ID: 25, Username: mixt, Email: mixt@gmail.com
+ID: 19, Username: fien, Email: fien@gmail.com
+ID: 4, Username: njah, Email: njah@gmail.com
+ID: 5, Username: kelvin, Email: kel@gmail.com
+
+=== BIOMETRIC_DATA TABLE ===
+ID: 2, User ID: 1, Type: fingerprint
+ID: 3, User ID: 1, Type: palmprint
+ID: 4, User ID: 2, Type: fingerprint
+ID: 5, User ID: 2, Type: face
+ID: 6, User ID: 3, Type: face
+ID: 7, User ID: 3, Type: palmprint
+ID: 8, User ID: 4, Type: fingerprint
+ID: 9, User ID: 4, Type: face
+ID: 11, User ID: 5, Type: palmprint
+ID: 13, User ID: 6, Type: palmprint

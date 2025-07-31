@@ -1,0 +1,43 @@
+runtime: python310
+service: default
+entrypoint: gunicorn --bind :$PORT --workers 1 --worker-class uvicorn.workers.UvicornWorker --timeout 0 main:app
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+resources:
+  cpu: 4
+  memory_gb: 8
+  disk_size_gb: 20
+
+env_variables:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  CLOUD_PROVIDER: "gcp"
+  CORS_ORIGINS: "https://frontend-dot-biometric-auth-system.uc.r.appspot.com,https://biometric-auth-system.uc.r.appspot.com,http://localhost:3000,http://localhost:3001"
+  ALLOWED_HOSTS: "*"
+  PYTORCH_ENABLED: "true"
+  MIN_BIOMETRIC_METHODS: "2"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  REFRESH_TOKEN_EXPIRE_MINUTES: "10080"
+
+# Include secrets from Secret Manager
+includes:
+- secret: db-credentials
+  env_variables:
+    DATABASE_URL: "#{DATABASE_URL}"
+- secret: app-secrets
+  env_variables:
+    SECRET_KEY: "#{SECRET_KEY}"
+    JWT_SECRET: "#{JWT_SECRET}"
+
+handlers:
+- url: /health
+  script: auto
+  secure: always
+
+- url: /.*
+  script: auto
+  secure: always

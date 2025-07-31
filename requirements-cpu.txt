@@ -1,0 +1,29 @@
+# Core Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+gunicorn==21.2.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Data Validation and Settings
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Authentication and Security
+python-jose[cryptography]==3.3.0
+passlib==1.7.4
+python-multipart==0.0.6
+
+# Essential ML and Image Processing (CPU Only)
+--find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==2.1.0+cpu  # ~150MB
+torchvision==0.16.0+cpu  # ~50MB
+opencv-python-headless==4.8.1.78  # ~40MB
+numpy==1.24.3  # ~15MB
+pillow==10.1.0  # ~3MB
+
+# Development
+python-dotenv==1.0.0
+httpx==0.25.2

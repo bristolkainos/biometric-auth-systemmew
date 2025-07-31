@@ -29,10 +29,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
     
     # CORS settings - Updated for Railway deployment
-    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "https://frontend-production-2a3e.up.railway.app,https://biometric-auth-v2-7019.uc.r.appspot.com,https://frontend-dot-biometric-auth-v2-7019.uc.r.appspot.com,http://localhost:3000,http://localhost:3001,http://localhost:8080")
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "https://frontend-production-2a3e.up.railway.app,http://localhost:3000,http://localhost:3001,http://localhost:8080")
     
     # Allowed hosts for security - Updated for Railway
-    ALLOWED_HOSTS: str = os.getenv("ALLOWED_HOSTS", "frontend-production-2a3e.up.railway.app,backend-production-9ec1.up.railway.app,biometric-auth-v2-7019.uc.r.appspot.com,frontend-dot-biometric-auth-v2-7019.uc.r.appspot.com,localhost,127.0.0.1,0.0.0.0")
+    ALLOWED_HOSTS: str = os.getenv("ALLOWED_HOSTS", "frontend-production-2a3e.up.railway.app,backend-production-9ec1.up.railway.app,localhost,127.0.0.1,0.0.0.0")
     
     # Biometric settings
     MIN_BIOMETRIC_METHODS: int = int(os.getenv("MIN_BIOMETRIC_METHODS", "1"))

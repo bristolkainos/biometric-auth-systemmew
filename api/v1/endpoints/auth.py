@@ -374,6 +374,15 @@ async def user_login(
             else:
                 raise ValueError(f"Unsupported biometric type: {user_credentials.biometric_type}")
             
+            # After processing biometric, check for explicit failure
+            if isinstance(result_data, dict) and result_data.get("success") is False:
+                error_msg = result_data.get("error", f"Failed to process {user_credentials.biometric_type} biometric")
+                logger.error(f"Biometric processing error: {error_msg}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg
+                )
+            # Extract features from result_data
             login_features = result_data.get("features", [])
             logger.info(f"PyTorch {user_credentials.biometric_type} login processing: {len(login_features)} features extracted")
             
@@ -398,6 +407,15 @@ async def user_login(
                 else:
                     raise ValueError(f"Unsupported biometric type: {biometric_type}")
                 
+                # After processing biometric, check for explicit failure
+                if isinstance(result_data, dict) and result_data.get("success") is False:
+                    error_msg = result_data.get("error", f"Failed to process {user_credentials.biometric_type} biometric")
+                    logger.error(f"Biometric processing error: {error_msg}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=error_msg
+                    )
+                # Extract features from result_data
                 login_features = result_data.get("features", [])
                 logger.info(f"Basic {user_credentials.biometric_type} login processing: {len(login_features)} features extracted")
                 
@@ -409,9 +427,10 @@ async def user_login(
                 )
         
         if not login_features:
+            logger.error(f"No features extracted for {user_credentials.biometric_type}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to extract biometric features from input"
+                detail=f"Failed to extract {user_credentials.biometric_type} biometric features from input"
             )
         
                 
@@ -428,6 +447,19 @@ async def user_login(
                 stored_features = json.loads(str(stored_biometric.biometric_features))
                 logger.debug("Comparing against stored features: %d dimensions", len(stored_features))
                 
+                # Align feature dimensions
+                import numpy as np
+                stored_arr = np.array(stored_features, dtype=np.float32)
+                input_arr = np.array(login_features, dtype=np.float32)
+                if stored_arr.shape != input_arr.shape:
+                    logger.warning(f"Feature dimension mismatch: stored={stored_arr.shape}, input={input_arr.shape}. Aligning features.")
+                    if input_arr.size < stored_arr.size:
+                        pad = np.zeros(stored_arr.size - input_arr.size, dtype=np.float32)
+                        input_arr = np.concatenate([input_arr, pad])
+                    else:
+                        input_arr = input_arr[:stored_arr.size]
+                    login_features = input_arr.tolist()
+
                 # Use PyTorch verification for better accuracy
                 try:
                     from pytorch_biometric_service import get_pytorch_biometric_service

@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from app.core.database import engine
+from core.database import engine
 
 
 def reset_sequence(table, sequence):

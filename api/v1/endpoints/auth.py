@@ -8,22 +8,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend.core.database import get_db
-from backend.core.security import (
+from core.database import get_db
+from core.security import (
     authenticate_user, authenticate_admin_user, get_password_hash,
     create_access_token, create_refresh_token, verify_token,
     validate_password_strength, get_current_user, get_current_admin_user
 )
-from backend.core.config import settings
-from backend.models.user import User
-from backend.models.admin_user import AdminUser
-from backend.models.login_attempt import LoginAttempt
-from backend.models.biometric_data import BiometricData
-from backend.schemas.auth import (
+from config.settings import settings
+from user import User
+from admin_user import AdminUser
+from login_attempt import LoginAttempt
+from biometric_data import BiometricData
+from schemas.auth import (
     UserRegister, UserLogin, AdminLogin, TokenResponse,
     RefreshToken, UserResponse, AdminResponse
 )
-from backend.services.biometric_service import BiometricService
+from biometric_service import BiometricService
 
 def user_to_response(user: User) -> UserResponse:
     """Convert User model to UserResponse schema"""
@@ -141,7 +141,7 @@ async def register_user(
             image_hash = hashlib.sha256(image_bytes).hexdigest()
             
             try:
-                from backend.services.pytorch_biometric_service import get_pytorch_biometric_service
+                from pytorch_biometric_service import get_pytorch_biometric_service
                 pytorch_service = get_pytorch_biometric_service()
                 
                 # Optimized processing with timing
@@ -168,7 +168,7 @@ async def register_user(
                 
                 # Fast fallback to basic biometric service
                 try:
-                    from backend.services.biometric_service import get_biometric_service
+                    from biometric_service import get_biometric_service
                     basic_service = get_biometric_service()
                     
                     fallback_start = datetime.now()
@@ -249,7 +249,7 @@ async def register_user(
         logger.info(f"User created with ID: {user.id}")
         
          # Blockchain integration (ENABLE BY UNCOMMENTING BELOW)
-        # from app.services.blockchain_service import BlockchainService
+        # from services.blockchain_service import BlockchainService
         # import logging
         # logger = logging.getLogger(__name__)
         
@@ -361,7 +361,7 @@ async def user_login(
         # Extract features using PyTorch service first (faster and more accurate)
         login_features = None
         try:
-            from backend.services.pytorch_biometric_service import get_pytorch_biometric_service
+            from pytorch_biometric_service import get_pytorch_biometric_service
             pytorch_service = get_pytorch_biometric_service()
             
             # Process with PyTorch service - this is the expensive operation we're optimizing
@@ -382,7 +382,7 @@ async def user_login(
             
             # Fallback to basic biometric service
             try:
-                from backend.services.biometric_service import get_biometric_service
+                from biometric_service import get_biometric_service
                 basic_service = get_biometric_service()
                 
                 # Process with basic service
@@ -430,7 +430,7 @@ async def user_login(
                 
                 # Use PyTorch verification for better accuracy
                 try:
-                    from backend.services.pytorch_biometric_service import get_pytorch_biometric_service
+                    from pytorch_biometric_service import get_pytorch_biometric_service
                     pytorch_service = get_pytorch_biometric_service()
                     
                     # Fast verification using pre-computed features - no image processing here!
@@ -497,7 +497,7 @@ async def user_login(
             stored_features = json.loads(str(stored_biometric.biometric_features))
             logger.debug("Stored features for user %s: %s", user.username, stored_features)
             try:
-                from backend.services.pytorch_biometric_service import get_pytorch_biometric_service
+                from pytorch_biometric_service import get_pytorch_biometric_service
                 pytorch_service = get_pytorch_biometric_service()
                 # PyTorch verification - returns (success, confidence_score, details)
                 match, score, details = pytorch_service.verify_biometric(
@@ -961,7 +961,7 @@ async def biometric_authentication(
         logger.info(f"Biometric authentication successful for user {user_id}, modality: {modality}")
         
         # Record successful login attempt
-        from backend.models.login_attempt import LoginAttempt
+        from login_attempt import LoginAttempt
         successful_attempt = LoginAttempt(
             user_id=user_id,
             attempt_type="biometric",

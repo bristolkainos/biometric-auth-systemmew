@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session
 import hashlib
 import secrets
 
-from .config import settings
-from .database import get_db
-from backend.models.user import User
-from backend.models.admin_user import AdminUser
+from core.config import settings
+from core.database import get_db
+from user import User
+from admin_user import AdminUser
 
 # Use cloud-compatible password hashing
 try:
@@ -97,12 +97,6 @@ def verify_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except jwt.InvalidTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except JWTError as e:

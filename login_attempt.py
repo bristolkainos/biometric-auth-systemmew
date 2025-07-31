@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
+from core.database import Base
 
 class LoginAttempt(Base):
     __tablename__ = "login_attempts"

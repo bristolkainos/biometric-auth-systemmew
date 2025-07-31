@@ -7,13 +7,13 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal, engine, Base
+from core.database import SessionLocal, engine, Base
 # Import all models to ensure proper initialization
-from app.models.user import User
-from app.models.admin_user import AdminUser
-from app.models.biometric_data import BiometricData
-from app.models.login_attempt import LoginAttempt
-from app.core.security import get_password_hash
+from user import User
+from admin_user import AdminUser
+from biometric_data import BiometricData
+from login_attempt import LoginAttempt
+from core.security import get_password_hash
 import logging
 
 logging.basicConfig(level=logging.INFO)

@@ -2,9 +2,13 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from app.database import get_db
-from app.models.admin import AdminUser
-from app.core.security import get_password_hash
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+import sys
+import os
+from core.database import get_db
+from admin_user import AdminUser
+from core.security import get_password_hash
 
 def set_admin_password():
     db = next(get_db())

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import time
 import logging
 from typing import Optional
-from .config import settings
+from core.config import settings
 
 load_dotenv()
 

@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 import io
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.stats import skew, kurtosis
-from backend.core.config import settings
+from config.settings import settings
 import json
 try:
     import matplotlib

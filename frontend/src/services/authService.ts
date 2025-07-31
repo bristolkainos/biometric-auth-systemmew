@@ -1,10 +1,14 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL;
+export const API_BASE_URL = process.env.REACT_APP_API_URL || window.location.origin;
+// Ensure API base URL includes '/api/v1' prefix for backend endpoints
+const API_URL = API_BASE_URL.endsWith('/api/v1')
+  ? API_BASE_URL
+  : `${API_BASE_URL}/api/v1`;
 
 // Create axios instance
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

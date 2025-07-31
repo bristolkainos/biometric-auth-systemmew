@@ -1,0 +1,12 @@
+{
+  "name": "biometric-frontend-production",
+  "version": "1.0.0",
+  "description": "Production server for biometric authentication frontend",
+  "main": "server-simple.js",
+  "scripts": {
+    "start": "node server-simple.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

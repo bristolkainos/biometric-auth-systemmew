@@ -13,8 +13,8 @@ from dotenv import load_dotenv
 # Load environment variables first
 load_dotenv()
 
-from backend.core.config import settings
-from backend.api.v1.api import api_router
+from core.config import settings
+from api.v1.api import api_router
 
 # Configure logging
 logging.basicConfig(
@@ -67,7 +67,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Add CORS middleware with proper configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:8080"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

@@ -6,13 +6,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend.core.database import get_db
-from backend.core.security import get_current_user, get_current_admin_user
-from backend.models.user import User
-from backend.models.admin_user import AdminUser
-from backend.models.biometric_data import BiometricData
-from backend.models.login_attempt import LoginAttempt
-from backend.schemas.auth import UserResponse
+from core.database import get_db
+from core.security import get_current_user, get_current_admin_user
+from user import User
+from admin_user import AdminUser
+from biometric_data import BiometricData
+from login_attempt import LoginAttempt
+from schemas.auth import UserResponse
 
 router = APIRouter()
 
@@ -82,7 +82,7 @@ async def delete_biometric_data(
         BiometricData.id != biometric_id
     ).count()
     
-    from backend.core.config import settings
+    from config.settings import settings
     if remaining_methods < settings.MIN_BIOMETRIC_METHODS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

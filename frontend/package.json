@@ -1,7 +1,7 @@
 {
   "name": "biometric-auth-frontend",
   "version": "1.0.0",
-  "homepage": ".",
+  "homepage": "https://bristolkainos.github.io/biometric-auth-systemmew",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",

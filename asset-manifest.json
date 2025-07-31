@@ -1,0 +1,11 @@
+{
+  "files": {
+    "main.css": "/biometric-auth-systemmew/static/css/main.646e9fca.css",
+    "main.js": "/biometric-auth-systemmew/static/js/main.b0f696da.js",
+    "index.html": "/biometric-auth-systemmew/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.646e9fca.css",
+    "static/js/main.b0f696da.js"
+  ]
+}

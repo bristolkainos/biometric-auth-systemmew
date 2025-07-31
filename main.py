@@ -59,20 +59,21 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception caught: {exc}", exc_info=True)
     logger.error(f"Request URL: {request.url}")
     logger.error(f"Request method: {request.method}")
+    # Return JSONResponse
     return JSONResponse(
         status_code=500,
         content={"error": "Internal server error", "detail": str(exc)}
     )
 
- # Add CORS middleware with proper configuration
- app.add_middleware(
-     CORSMiddleware,
-     # Temporarily allow all origins to fix CORS for admin login
-     allow_origins=["*"],
+# Add CORS middleware with proper configuration
+app.add_middleware(
+    CORSMiddleware,
+    # Temporarily allow all origins to fix CORS for admin login
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
 # Add trusted host middleware for production

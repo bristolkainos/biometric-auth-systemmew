@@ -11,4 +11,4 @@ cmds = [
 cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = "cd backend && PYTHONPATH=/app/backend python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+cmd = "python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT"

@@ -14,14 +14,14 @@ from sqlalchemy import desc
 from typing import cast
 from scipy.stats import skew, kurtosis
 
-from core.database import get_db
-from core.security import get_current_user
-from models.user import User
-from models.biometric_data import BiometricData
-from models.login_attempt import LoginAttempt
-from schemas.auth import BiometricDataInput
-from services.biometric_service import BiometricService
-from core.config import settings
+from backend.core.database import get_db
+from backend.core.security import get_current_user
+from backend.models.user import User
+from backend.models.biometric_data import BiometricData
+from backend.models.login_attempt import LoginAttempt
+from backend.schemas.auth import BiometricDataInput
+from backend.services.biometric_service import BiometricService
+from backend.core.config import settings
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -36,7 +36,7 @@ def get_pytorch_service():
     global _pytorch_service
     if _pytorch_service is None:
         try:
-            from services.pytorch_biometric_service import PyTorchBiometricService
+            from backend.services.pytorch_biometric_service import PyTorchBiometricService
             _pytorch_service = PyTorchBiometricService()
             logger.info("PyTorch service initialized successfully")
         except Exception as e:

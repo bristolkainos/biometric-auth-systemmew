@@ -10,8 +10,8 @@ import secrets
 
 from .config import settings
 from .database import get_db
-from models.user import User
-from models.admin_user import AdminUser
+from backend.models.user import User
+from backend.models.admin_user import AdminUser
 
 # Use cloud-compatible password hashing
 try:

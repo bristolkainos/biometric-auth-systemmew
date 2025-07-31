@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from core.database import Base
+from backend.core.database import Base
 
 class BiometricData(Base):
     __tablename__ = "biometric_data"

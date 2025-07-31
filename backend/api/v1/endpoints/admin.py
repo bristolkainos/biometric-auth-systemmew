@@ -12,13 +12,13 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from fastapi.responses import StreamingResponse
 
-from core.database import get_db
-from core.security import get_current_admin_user
-from models.user import User
-from models.admin_user import AdminUser
-from models.biometric_data import BiometricData
-from models.login_attempt import LoginAttempt
-from schemas.auth import UserResponse
+from backend.core.database import get_db
+from backend.core.security import get_current_admin_user
+from backend.models.user import User
+from backend.models.admin_user import AdminUser
+from backend.models.biometric_data import BiometricData
+from backend.models.login_attempt import LoginAttempt
+from backend.schemas.auth import UserResponse
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from core.database import Base
+from backend.core.database import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -33,7 +33,7 @@ class User(Base):
 
     def is_locked_out(self):
         """Check if user account is locked due to too many failed attempts"""
-        from core.config import settings
+        from backend.core.config import settings
         return self.failed_login_attempts >= settings.MAX_LOGIN_ATTEMPTS
 
     def increment_failed_attempts(self):

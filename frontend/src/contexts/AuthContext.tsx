@@ -61,13 +61,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const token = localStorage.getItem('access_token');
         if (token) {
-          // Silently try to get user data - if it fails, the user will need to login again
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
+          console.log('🔍 Found existing token, checking authentication...');
+          // Try to get user data first
+          try {
+            const userData = await authService.getCurrentUser();
+            console.log('✅ Successfully authenticated as regular user:', userData.username);
+            setUser(userData);
+            setAdminUser(null);
+          } catch (userError) {
+            // If getting user data fails, try admin data
+            console.log('🔄 Regular user auth failed, trying admin auth...');
+            try {
+              const adminData = await authService.getCurrentAdmin();
+              console.log('✅ Successfully authenticated as admin user:', adminData.username);
+              setAdminUser(adminData);
+              setUser(null);
+            } catch (adminError) {
+              // If both fail, tokens are invalid - clear them
+              console.log('❌ Authentication check failed for both user and admin - clearing tokens');
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              setUser(null);
+              setAdminUser(null);
+            }
+          }
+        } else {
+          console.log('ℹ️ No existing token found, user needs to login');
         }
       } catch (error) {
-        // Token is invalid, expired, or server is unreachable - clear tokens silently
-        console.log('Authentication check failed - clearing tokens');
+        // Unexpected error - clear tokens
+        console.log('❌ Unexpected authentication error - clearing tokens:', error);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         setUser(null);

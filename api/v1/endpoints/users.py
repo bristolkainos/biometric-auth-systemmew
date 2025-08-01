@@ -82,7 +82,7 @@ async def delete_biometric_data(
         BiometricData.id != biometric_id
     ).count()
     
-    from config.settings import settings
+    from core.config import settings
     if remaining_methods < settings.MIN_BIOMETRIC_METHODS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

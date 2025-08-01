@@ -6,6 +6,7 @@ gunicorn>=21.2.0  # Compatible with Python 3.13
 # Database
 sqlalchemy>=2.0.23  # Compatible with Python 3.13
 psycopg2-binary>=2.9.9  # Compatible with Python 3.13
+scikit-learn==1.3.2
 
 # Data Validation and Settings
 pydantic>=2.5.0  # Compatible with Python 3.13

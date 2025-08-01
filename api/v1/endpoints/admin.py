@@ -19,6 +19,7 @@ from admin_user import AdminUser
 from biometric_data import BiometricData
 from login_attempt import LoginAttempt
 from schemas.auth import UserResponse
+from biometric_service import BiometricService
 
 router = APIRouter()
 
@@ -750,6 +751,54 @@ async def get_pipeline_analysis_plot(
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
         fig.suptitle('Biometric Processing Pipeline Analysis', fontsize=16, fontweight='bold')
         
+        # If no real processing data exists, try to generate some from existing biometric records
+        if not processing_times and not quality_metrics and not feature_dimensions:
+            # Check if we have any biometric records without analysis
+            unprocessed_records = db.query(BiometricData).filter(
+                BiometricData.processing_analysis.is_(None)
+            ).limit(10).all()
+            
+            if unprocessed_records:
+                # Initialize biometric service
+                biometric_service = BiometricService()
+                biometric_service.initialize()
+                
+                # Process a few records to generate real analysis data
+                for record in unprocessed_records[:5]:  # Limit to 5 to avoid timeout
+                    try:
+                        if record.image_data:
+                            # Generate real biometric analysis
+                            result = biometric_service.process_biometric_detailed(
+                                record.image_data, 
+                                record.biometric_type, 
+                                record.user_id
+                            )
+                            
+                            # Store the analysis
+                            record.processing_analysis = json.dumps(result["detailed_analysis"])
+                            
+                            # Extract metrics for immediate visualization
+                            analysis = result["detailed_analysis"]
+                            if 'processing_time' in analysis:
+                                processing_times.append(float(analysis['processing_time']))
+                            if 'feature_dimensions' in analysis:
+                                feature_dimensions.append(int(analysis['feature_dimensions']))
+                            if 'quality_metrics' in analysis:
+                                quality_data = analysis['quality_metrics']
+                                for metric, value in quality_data.items():
+                                    if isinstance(value, (int, float)):
+                                        quality_metrics[metric].append(float(value))
+                    except Exception as e:
+                        print(f"Failed to process biometric record {record.id}: {e}")
+                        continue
+                
+                # Commit the new analysis data
+                try:
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                    print(f"Failed to commit biometric analysis: {e}")
+
         # 1. Processing Time Distribution
         if processing_times:
             ax1.hist(processing_times, bins=20, alpha=0.8, color='#2196F3', edgecolor='white')
@@ -757,12 +806,12 @@ async def get_pipeline_analysis_plot(
                        label=f'Mean: {np.mean(processing_times):.2f}s')
             ax1.legend()
         else:
-            # Mock data if no real data
-            mock_times = np.random.gamma(2, 1.5, 100)
-            ax1.hist(mock_times, bins=20, alpha=0.8, color='#2196F3', edgecolor='white')
-            ax1.axvline(np.mean(mock_times), color='#FF5722', linestyle='--', linewidth=2,
-                       label=f'Mean: {np.mean(mock_times):.2f}s')
-            ax1.legend()
+            # Show "No Data Available" instead of mock data
+            ax1.text(0.5, 0.5, 'No Processing Data Available\n\nUpload biometric samples to\ngenerate real analysis', 
+                    ha='center', va='center', transform=ax1.transAxes, fontsize=12, fontweight='bold',
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor="#FFF3E0", edgecolor="#FF9800"))
+            ax1.set_xlim(0, 1)
+            ax1.set_ylim(0, 1)
         
         ax1.set_xlabel('Processing Time (seconds)', fontweight='bold')
         ax1.set_ylabel('Frequency', fontweight='bold')
@@ -778,10 +827,12 @@ async def get_pipeline_analysis_plot(
                 ax2.text(0.5, 0.5, 'No Quality\nMetrics Available', ha='center', va='center',
                         transform=ax2.transAxes, fontsize=12, fontweight='bold')
         else:
-            # Mock quality metrics
-            mock_accuracy = [85, 78, 92, 88]
-            ax2.bar(['Accuracy', 'Precision', 'Recall', 'F1-Score'], mock_accuracy, 
-                   color=['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'], alpha=0.8)
+            # Show "No Data" instead of mock metrics
+            ax2.text(0.5, 0.5, 'No Quality Metrics Available\n\nProcess biometric samples to\ngenerate quality analysis', 
+                    ha='center', va='center', transform=ax2.transAxes, fontsize=12, fontweight='bold',
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor="#E8F5E8", edgecolor="#4CAF50"))
+            ax2.set_xlim(0, 1)
+            ax2.set_ylim(0, 1)
         
         ax2.set_ylabel('Quality Score', fontweight='bold')
         ax2.set_title('Quality Metrics', fontweight='bold')
@@ -793,10 +844,12 @@ async def get_pipeline_analysis_plot(
             dim_counts = [feature_dimensions.count(dim) for dim in unique_dims]
             ax3.pie(dim_counts, labels=[f'{dim}D' for dim in unique_dims], autopct='%1.1f%%', startangle=90)
         else:
-            # Mock feature dimensions
-            dims = ['2048D', '1024D', '512D']
-            counts = [85, 12, 3]
-            ax3.pie(counts, labels=dims, autopct='%1.1f%%', startangle=90)
+            # Show "No Data" instead of mock dimensions
+            ax3.text(0.5, 0.5, 'No Feature Data Available\n\nUpload biometric images to\ngenerate feature analysis', 
+                    ha='center', va='center', transform=ax3.transAxes, fontsize=12, fontweight='bold',
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor="#E3F2FD", edgecolor="#2196F3"))
+            ax3.set_xlim(0, 1)
+            ax3.set_ylim(0, 1)
         
         ax3.set_title('Feature Vector Dimensions', fontweight='bold')
         
@@ -2035,6 +2088,7 @@ async def get_similarity_plots(
 @router.get("/analytics/cross-dataset-validation/plot")
 async def get_cross_dataset_validation_plot(
     current_admin: AdminUser = Depends(get_current_admin_user),
+    size: str = "small"  # "small" for display, "full" for download
 ):
     """Generate comprehensive cross-dataset validation analysis dashboard."""
     # Enhanced dataset and modality information
@@ -2065,12 +2119,29 @@ async def get_cross_dataset_validation_plot(
         }
     }
     
-    # Create comprehensive dashboard
-    fig = plt.figure(figsize=(20, 16))
-    gs = fig.add_gridspec(4, 3, height_ratios=[1.2, 1, 1, 0.8], width_ratios=[1.5, 1, 1], 
+    # Create comprehensive dashboard with size-dependent dimensions
+    if size == "small":
+        # Increase display size and font scaling for clearer layout
+        fig_size = (22, 16)
+        dpi = 150
+        title_size = 16
+        label_size = 12
+        legend_size = 10
+    else:  # full size for download
+        fig_size = (20, 16)
+        dpi = 300
+        title_size = 22
+        label_size = 12
+        legend_size = 10
+    
+    # Use a 5x2 grid for better layout: heatmap, paired plots, and summary
+    fig = plt.figure(figsize=fig_size)
+    gs = fig.add_gridspec(5, 2,
+                         height_ratios=[1.5, 1, 1, 1, 0.8],
+                         width_ratios=[1, 1],
                          hspace=0.4, wspace=0.3)
     
-    # 1. Main Cross-Dataset Performance Matrix
+    # 1. Main Cross-Dataset Performance Matrix spans both columns
     ax1 = fig.add_subplot(gs[0, :])
     
     dataset_names = list(datasets.keys())
@@ -2097,14 +2168,14 @@ async def get_cross_dataset_validation_plot(
     ax1.set_xticklabels(dataset_names, rotation=45, ha='right')
     ax1.set_yticks(range(len(modality_names)))
     ax1.set_yticklabels(modality_names)
-    ax1.set_xlabel('Dataset', fontweight='bold', fontsize=12)
-    ax1.set_ylabel('Biometric Modality', fontweight='bold', fontsize=12)
+    ax1.set_xlabel('Dataset', fontweight='bold', fontsize=label_size)
+    ax1.set_ylabel('Biometric Modality', fontweight='bold', fontsize=label_size)
     ax1.set_title('Cross-Dataset Validation Performance Matrix (%)', 
-                  fontweight='bold', fontsize=16)
+                  fontweight='bold', fontsize=title_size)
     
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax1, shrink=0.8, aspect=30)
-    cbar.set_label('Accuracy (%)', fontweight='bold', fontsize=12)
+    cbar.set_label('Accuracy (%)', fontweight='bold', fontsize=label_size)
     
     # 2. Performance Drop Analysis
     ax2 = fig.add_subplot(gs[1, 0])
@@ -2168,7 +2239,7 @@ async def get_cross_dataset_validation_plot(
     ax3.grid(True, alpha=0.3)
     
     # 4. Domain Adaptation Analysis
-    ax4 = fig.add_subplot(gs[1, 2])
+    ax4 = fig.add_subplot(gs[2, 0])
     
     # Simulate domain adaptation improvements
     modality = 'Face'  # Focus on one modality
@@ -2202,7 +2273,7 @@ async def get_cross_dataset_validation_plot(
     ax4.grid(True, axis='y', alpha=0.3)
     
     # 5. Statistical Significance Analysis
-    ax5 = fig.add_subplot(gs[2, 0])
+    ax5 = fig.add_subplot(gs[2, 1])
     
     # Create confidence intervals for performance estimates
     confidence_intervals = {}
@@ -2236,7 +2307,7 @@ async def get_cross_dataset_validation_plot(
     ax5.grid(True, alpha=0.3)
     
     # 6. Transfer Learning Effectiveness
-    ax6 = fig.add_subplot(gs[2, 1])
+    ax6 = fig.add_subplot(gs[3, 0])
     
     # Simulate transfer learning scenarios
     transfer_scenarios = ['No Transfer', 'Feature Transfer', 'Fine-tuning', 'Full Transfer']
@@ -2264,7 +2335,7 @@ async def get_cross_dataset_validation_plot(
     ax6.grid(True, axis='y', alpha=0.3)
     
     # 7. Robustness Analysis
-    ax7 = fig.add_subplot(gs[2, 2])
+    ax7 = fig.add_subplot(gs[3, 1])
     
     # Robustness factors
     robustness_factors = ['Illumination', 'Pose', 'Expression', 'Occlusion', 'Quality']
@@ -2294,8 +2365,8 @@ async def get_cross_dataset_validation_plot(
     ax7.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
     ax7.grid(True)
     
-    # 8. Comprehensive Summary Table
-    ax8 = fig.add_subplot(gs[3, :])
+    # 8. Comprehensive Summary Table spans both columns
+    ax8 = fig.add_subplot(gs[4, :])
     ax8.axis('off')
     
     # Calculate summary statistics
@@ -2354,7 +2425,7 @@ async def get_cross_dataset_validation_plot(
     
     # Overall styling
     fig.suptitle('Cross-Dataset Validation Analysis Dashboard', 
-                 fontsize=22, fontweight='bold', y=0.98)
+                 fontsize=title_size, fontweight='bold', y=0.98)
     
     # Add insights
     best_dataset = max(dataset_names[1:], key=lambda x: np.mean([modalities[mod][x] for mod in modality_names]))
@@ -2364,7 +2435,7 @@ async def get_cross_dataset_validation_plot(
         f"• Best external performance: {best_dataset} (avg: {np.mean([modalities[mod][best_dataset] for mod in modality_names]):.1f}%)",
         f"• Most challenging dataset: {worst_dataset} (avg: {np.mean([modalities[mod][worst_dataset] for mod in modality_names]):.1f}%)",
         f"• Multimodal fusion shows best generalization across all datasets",
-        f"• Average performance drop: {np.mean([np.mean([modalities['Internal-Train'][mod] - modalities[mod][ds] for mod in modality_names]) for ds in dataset_names[1:]]):.1f}%"
+        f"• Average performance drop: {np.mean([np.mean([modalities[mod]['Internal-Train'] - modalities[mod][ds] for mod in modality_names]) for ds in dataset_names[1:]]):.1f}%"
     ]
     
     insights_text = '\n'.join(insights)
@@ -2382,7 +2453,7 @@ async def get_cross_dataset_validation_plot(
     plt.tight_layout(rect=[0, 0.08, 1, 0.96])
     
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+    plt.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor='white')
     plt.close(fig)
     buf.seek(0)
     return StreamingResponse(buf, media_type='image/png')
@@ -3158,6 +3229,7 @@ async def get_false_positive_negative_examples_plot(
 @router.get("/analytics/feature-distribution-time/plot")
 async def get_feature_distribution_time_plot(
     current_admin: AdminUser = Depends(get_current_admin_user),
+    size: str = "small"  # "small" for display, "full" for download
 ):
     """Generate comprehensive feature distribution evolution analysis dashboard."""
     # Enhanced feature evolution data with multiple layers and statistics
@@ -3219,8 +3291,22 @@ async def get_feature_distribution_time_plot(
         }
     }
     
-    # Create comprehensive dashboard
-    fig = plt.figure(figsize=(20, 16))
+    # Create comprehensive dashboard with size-dependent dimensions
+    if size == "small":
+        # Increase display size and font scaling for clearer layout
+        fig_size = (22, 16)
+        dpi = 150
+        title_size = 16
+        label_size = 12
+        legend_size = 10
+    else:  # full size for download
+        fig_size = (20, 16)
+        dpi = 300
+        title_size = 22
+        label_size = 12
+        legend_size = 10
+    
+    fig = plt.figure(figsize=fig_size)
     gs = fig.add_gridspec(4, 3, height_ratios=[1.2, 1, 1, 0.8], width_ratios=[1.5, 1, 1], 
                          hspace=0.4, wspace=0.3)
     
@@ -3252,11 +3338,11 @@ async def get_feature_distribution_time_plot(
                 ha='center', va='top', fontsize=8, 
                 bbox=dict(boxstyle="round,pad=0.2", facecolor=layer_data['color'], alpha=0.3))
     
-    ax1.set_xlabel('Training Epoch', fontweight='bold', fontsize=12)
-    ax1.set_ylabel('Feature Mean Value', fontweight='bold', fontsize=12)
+    ax1.set_xlabel('Training Epoch', fontweight='bold', fontsize=label_size)
+    ax1.set_ylabel('Feature Mean Value', fontweight='bold', fontsize=label_size)
     ax1.set_title('Feature Distribution Evolution Across Network Layers', 
-                  fontweight='bold', fontsize=16)
-    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                  fontweight='bold', fontsize=title_size)
+    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=legend_size)
     ax1.grid(True, alpha=0.3)
     
     # 2. Variance Stabilization Analysis
@@ -3416,7 +3502,8 @@ async def get_feature_distribution_time_plot(
                          s=30, alpha=0.7, edgecolor='black', linewidth=0.5)
     
     # Add trajectory arrows
-    for i in range(0, len(epochs)-1, 10):
+    # Annotate trajectory arrows every 10 epochs, ensuring i+10 < len(epochs)
+    for i in range(0, len(epochs)-10, 10):
         ax7.annotate('', xy=(means[i+10], variances[i+10]), xytext=(means[i], variances[i]),
                     arrowprops=dict(arrowstyle='->', lw=1, alpha=0.6, color='red'))
     
@@ -3497,7 +3584,7 @@ async def get_feature_distribution_time_plot(
     
     # Overall styling
     fig.suptitle('Feature Distribution Evolution Analysis Dashboard', 
-                 fontsize=22, fontweight='bold', y=0.98)
+                 fontsize=title_size, fontweight='bold', y=0.98)
     
     # Add insights
     best_converging_layer = max(convergence_rates.keys(), key=lambda x: convergence_rates[x])
@@ -3525,10 +3612,24 @@ async def get_feature_distribution_time_plot(
     plt.tight_layout(rect=[0, 0.08, 1, 0.96])
     
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+    plt.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor='white')
     plt.close(fig)
     buf.seek(0)
     return StreamingResponse(buf, media_type='image/png')
+
+@router.get("/analytics/feature-distribution-time/download")
+async def download_feature_distribution_time_plot(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Download full-size Feature Distribution Over Time plot."""
+    return await get_feature_distribution_time_plot(current_admin, size="full")
+
+@router.get("/analytics/cross-dataset-validation/download")
+async def download_cross_dataset_validation_plot(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Download full-size Cross-Dataset Validation plot."""
+    return await get_cross_dataset_validation_plot(current_admin, size="full")
 
 @router.get("/analytics/model-performance-by-class/plot")
 async def get_model_performance_by_class_plot(
@@ -8112,3 +8213,29 @@ async def get_class_wise_precision_recall_f1_plot(
     plt.close(fig)
     buf.seek(0)
     return StreamingResponse(buf, media_type='image/png')
+
+
+
+# Download endpoints for full-size charts
+@router.get("/analytics/feature-distribution-time/download")
+async def download_feature_distribution_time_plot(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Download full-size Feature Distribution Over Time plot"""
+    return await get_feature_distribution_time_plot(current_admin, size="full")
+
+
+@router.get("/analytics/cross-dataset-validation/download") 
+async def download_cross_dataset_validation_plot(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Download full-size Cross-Dataset Validation plot"""
+    return await get_cross_dataset_validation_plot(current_admin, size="full")
+
+
+@router.get("/analytics/biometric-model-architecture/download")
+async def download_biometric_model_architecture_plot(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Download full-size Biometric Model Architecture plot"""
+    return await get_biometric_model_architecture_plot(current_admin, size="full")

@@ -21,7 +21,7 @@ from biometric_data import BiometricData
 from login_attempt import LoginAttempt
 from schemas.auth import BiometricDataInput
 from biometric_service import BiometricService
-from config.settings import settings
+from core.config import settings
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 

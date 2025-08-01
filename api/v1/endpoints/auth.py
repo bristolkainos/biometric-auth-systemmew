@@ -14,7 +14,7 @@ from core.security import (
     create_access_token, create_refresh_token, verify_token,
     validate_password_strength, get_current_user, get_current_admin_user
 )
-from config.settings import settings
+from core.config import settings
 from user import User
 from admin_user import AdminUser
 from login_attempt import LoginAttempt
@@ -317,6 +317,7 @@ async def register_user(
 @router.post("/login", response_model=TokenResponse)
 async def user_login(
     user_credentials: UserLogin,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """User login endpoint with biometric verification"""
@@ -571,9 +572,10 @@ async def user_login(
             # Log failed login attempt
             failed_attempt = LoginAttempt(
                 user_id=int(user.id),
+                username=user.username,
                 attempt_type=user_credentials.biometric_type,
                 success=False,
-                ip_address="unknown"  # Can be extracted from request if needed
+                ip_address=request.client.host
             )
             db.add(failed_attempt)
             db.commit()
@@ -585,9 +587,10 @@ async def user_login(
         # Step 7: Log successful login attempt
         successful_attempt = LoginAttempt(
             user_id=int(user.id),
+            username=user.username,
             attempt_type=user_credentials.biometric_type,
             success=True,
-            ip_address="unknown"
+            ip_address=request.client.host
         )
         db.add(successful_attempt)
 

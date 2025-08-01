@@ -8,7 +8,10 @@ cmds = [
 ]
 
 [phases.build]
-cmds = ["echo 'Build complete'"]
+cmds = [
+  "python download_resnet50.py",
+  "echo 'Build complete'"
+]
 
 [variables]
 PYTHONPATH = "/app:$PYTHONPATH"

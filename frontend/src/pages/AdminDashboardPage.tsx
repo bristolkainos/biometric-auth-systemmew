@@ -894,7 +894,7 @@ const AdminDashboardPage: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {dashboardData?.users_overview?.map((user: any) => (
+                        {users.map((user: any) => (
                           <TableRow key={user.id}>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

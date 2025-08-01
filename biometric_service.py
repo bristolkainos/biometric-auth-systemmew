@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 import io
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.stats import skew, kurtosis
-from config.settings import settings
+from core.config import settings
 import json
 try:
     import matplotlib
@@ -35,30 +35,37 @@ try:
 except ImportError:
     SKIMAGE_AVAILABLE = False
     logging.warning("scikit-image not available, using fallback image processing")
+
+# PyTorch and torchvision for ResNet50 feature extraction
+try:
+    import torch
+    import torchvision.transforms as transforms
+    from torchvision.models import resnet50, ResNet50_Weights
+    TORCH_AVAILABLE = True
+    print("✅ PyTorch available - ResNet50 will be used for deep feature extraction")
+except ImportError:
+    TORCH_AVAILABLE = False
+    print("⚠️ PyTorch not available, using traditional feature extraction")
+    print("💡 To enable ResNet50 features, install PyTorch: pip install torch torchvision")
+
 import base64
 from datetime import datetime
 import os
 from typing import List, Tuple
 
-# Import scikit-image for proper image processing
-try:
-    from skimage.feature import local_binary_pattern
-    from skimage.filters import sobel
-    SKIMAGE_AVAILABLE = True
-except ImportError:
-    SKIMAGE_AVAILABLE = False
-    logging.warning("scikit-image not available, using fallback image processing")
-
 logger = logging.getLogger(__name__)
 
 
 class BiometricService:
-    """Service for handling biometric authentication using simplified methods."""
+    """Service for handling biometric authentication using ResNet50-based deep learning methods."""
     _instance = None
     _initialized = False
     
     # Test mode flag disabled - use full processing
     FAST_TEST_MODE = False
+    
+    # Force real processing even without models
+    FORCE_REAL_PROCESSING = True
 
     def __new__(cls):
         if cls._instance is None:
@@ -75,16 +82,21 @@ class BiometricService:
             }
             # Container for loaded Keras embedding models
             self.keras_models = {}
+            
+            # ResNet50 model for deep feature extraction
+            self.resnet50_model = None
+            self.resnet50_transform = None
+            
             self._initialized = True
 
     @classmethod
     def initialize(cls):
         instance = cls()
         instance._load_models()
-        logger.info("Biometric service initialized with simplified methods.")
+        logger.info("Biometric service initialized with ResNet50 deep learning methods.")
 
     def _load_models(self):
-        """Load biometric models with fallback to simplified methods"""
+        """Load biometric models including ResNet50 for deep feature extraction"""
         model_path = Path(settings.MODEL_PATH)
         # Debug: log model path and its contents
         logger.info(f"Scanning model directory: {model_path} (exists: {model_path.exists()})")
@@ -119,12 +131,44 @@ class BiometricService:
         
         self.models = available_models
         
-        # TensorFlow/Keras model loading removed; using simplified biometric methods only
-        self.tf_available = False
-        logger.info("Using simplified biometric methods with enhanced features")
+        # Initialize ResNet50 for deep feature extraction
+        if TORCH_AVAILABLE:
+            try:
+                logger.info("🔄 Loading ResNet50 model for deep feature extraction...")
+                
+                # Load ResNet50 pretrained model with new API
+                self.resnet50_model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+                # Remove the final classification layer to get features
+                self.resnet50_model = torch.nn.Sequential(*list(self.resnet50_model.children())[:-1])
+                self.resnet50_model.eval()
+                
+                # Define image preprocessing transform
+                self.resnet50_transform = transforms.Compose([
+                    transforms.Resize((224, 224)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                ])
+                
+                logger.info("✅ ResNet50 model loaded successfully for deep feature extraction!")
+                self.tf_available = True
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to load ResNet50 model: {e}")
+                self.resnet50_model = None
+                self.resnet50_transform = None
+                self.tf_available = False
+        else:
+            self.tf_available = False
+            logger.warning("⚠️ PyTorch not available, using traditional feature extraction methods")
+        
+        # Log final status
+        if self.resnet50_model is not None:
+            logger.info("🧠 Using ResNet50-based deep learning feature extraction")
+        else:
+            logger.info("🔧 Using enhanced traditional biometric methods (no deep learning models)")
 
     def _extract_features(self, image: np.ndarray, modality: str) -> np.ndarray:
-        """Enhanced biometric feature extraction with more discriminative features"""
+        """Enhanced biometric feature extraction using ResNet50 deep learning"""
         
         try:
             # Convert to PIL Image for consistent processing
@@ -142,130 +186,121 @@ class BiometricService:
             if img.mode != 'L':
                 img = img.convert('L')
                 
-            # Convert to numpy array
+            # Convert to numpy array for traditional features
             img_array = np.array(img, dtype=np.float32) / 255.0
             
-            # Extract multiple types of features for robust comparison
-            features = []
+            # PRIMARY: ResNet50 Deep Learning Features
+            if self.resnet50_model is not None and TORCH_AVAILABLE:
+                try:
+                    # Convert grayscale to RGB for ResNet50
+                    img_rgb = img.convert('RGB')
+                    
+                    # Apply ResNet50 preprocessing
+                    img_tensor = self.resnet50_transform(img_rgb).unsqueeze(0)
+                    
+                    # Extract deep features using ResNet50
+                    with torch.no_grad():
+                        deep_features = self.resnet50_model(img_tensor)
+                        deep_features = deep_features.squeeze().numpy()
+                    
+                    logger.info(f"🧠 Extracted {len(deep_features)} ResNet50 deep learning features")
+                    
+                    # Combine with traditional features for enhanced discrimination
+                    traditional_features = self._extract_traditional_features(img_array)
+                    
+                    # Combine deep and traditional features
+                    combined_features = np.concatenate([deep_features, traditional_features])
+                    
+                    logger.info(f"✅ Combined feature vector: {len(deep_features)} deep + {len(traditional_features)} traditional = {len(combined_features)} total")
+                    
+                    return combined_features
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ ResNet50 feature extraction failed: {e}, falling back to traditional methods")
             
-            # 1. Raw pixel hash (most discriminative)
-            # Create a hash of the raw pixels for exact matching
-            pixel_hash = hashlib.sha256(img_array.tobytes()).hexdigest()
-            # Convert hex to numerical features
-            hash_features = [int(pixel_hash[i:i+2], 16) for i in range(0, min(64, len(pixel_hash)), 2)]
-            features.extend(hash_features)
-            
-            # 2. Reduced pixel sampling for key discriminative features
-            # Sample every 4th pixel to reduce noise sensitivity while maintaining uniqueness
-            sampled_pixels = img_array[::4, ::4].flatten()
-            features.extend(sampled_pixels[:1000])  # Limit to 1000 features
-            
-            # 2. Histogram features (intensity distribution) - more bins for detail
-            hist, _ = np.histogram(img_array.flatten(), bins=128, range=(0, 1))
-            hist = hist.astype(np.float32) / np.sum(hist)  # Normalize
-            features.extend(hist)
-            
-            # 3. Statistical features
-            features.extend([
-                np.mean(img_array),
-                np.std(img_array),
-                np.median(img_array),
-                np.percentile(img_array, 25),
-                np.percentile(img_array, 75),
-                np.min(img_array),
-                np.max(img_array)
-            ])
-            
-            # 4. Texture features using Local Binary Pattern (if available)
-            if SKIMAGE_AVAILABLE:
-                from skimage.feature import local_binary_pattern
-                radius = 3
-                n_points = 8 * radius
-                lbp = local_binary_pattern(img_array, n_points, radius, method='uniform')
-                lbp_hist, _ = np.histogram(lbp.flatten(), bins=n_points + 2, range=(0, n_points + 2))
-                lbp_hist = lbp_hist.astype(np.float32) / np.sum(lbp_hist)
-                features.extend(lbp_hist)
-            else:
-                # Fallback: simple texture features
-                # Calculate variance in local patches
-                patch_size = 8
-                texture_features = []
-                for i in range(0, img_array.shape[0] - patch_size, patch_size):
-                    for j in range(0, img_array.shape[1] - patch_size, patch_size):
-                        patch = img_array[i:i+patch_size, j:j+patch_size]
-                        texture_features.append(np.var(patch))
-                features.extend(texture_features[:128])  # Limit to 128 features for more detail
-            
-            # 5. Edge features using Sobel operator (if available)
-            if SKIMAGE_AVAILABLE:
-                from skimage.filters import sobel
-                edges = sobel(img_array)
-                edge_hist, _ = np.histogram(edges.flatten(), bins=128, range=(0, 1))
-                edge_hist = edge_hist.astype(np.float32) / np.sum(edge_hist)
-                features.extend(edge_hist)
-            else:
-                # Fallback: simple edge detection using gradients
-                grad_x = np.diff(img_array, axis=1)
-                grad_y = np.diff(img_array, axis=0)
-                edges = np.sqrt(grad_x[:-1, :]**2 + grad_y[:, :-1]**2)
-                edge_hist, _ = np.histogram(edges.flatten(), bins=128, range=(0, 1))
-                edge_hist = edge_hist.astype(np.float32) / np.sum(edge_hist)
-                features.extend(edge_hist)
-            
-            # 5. Frequency features
-            frequency_features = self._extract_frequency_features(img_array)
-            features.extend(frequency_features)
-            logger.debug(f"Frequency features: {len(frequency_features)}")
-            
-            # 6. Gradient and edge features
-            gradient_features = self._extract_gradient_features(img_array)
-            features.extend(gradient_features)
-            logger.debug(f"Gradient features: {len(gradient_features)}")
-            
-            # 7. Texture energy features
-            texture_features = self._extract_texture_energy_features(img_array)
-            features.extend(texture_features)
-            logger.debug(f"Texture features: {len(texture_features)}")
-            
-            # 8. Modality-specific features with enhanced discrimination
-            if modality == 'face':
-                face_features = self._extract_enhanced_face_features(img_array)
-                features.extend(face_features)
-                logger.debug(f"Face features: {len(face_features)}")
-            elif modality == 'fingerprint':
-                fingerprint_features = self._extract_enhanced_fingerprint_features(img_array)
-                features.extend(fingerprint_features)
-                logger.debug(f"Fingerprint features: {len(fingerprint_features)}")
-            elif modality == 'palmprint':
-                palmprint_features = self._extract_enhanced_palmprint_features(img_array)
-                features.extend(palmprint_features)
-                logger.debug(f"Palmprint features: {len(palmprint_features)}")
-            
-            # 9. Unique biometric signature based on pixel patterns
-            signature_features = self._extract_biometric_signature(img_array, modality)
-            features.extend(signature_features)
-            logger.debug(f"Signature features: {len(signature_features)}")
+            # FALLBACK: Traditional feature extraction
+            return self._extract_traditional_features(img_array)
             
         except Exception as e:
-            logger.error(f"Error in feature extraction for {modality}: {e}")
-            # Return basic features as fallback
-            features = [
-                np.mean(img_array),
-                np.std(img_array),
-                np.max(img_array),
-                np.min(img_array)
-            ]
+            logger.error(f"❌ Feature extraction failed: {e}")
+            # Return basic features as last resort
+            return np.array([np.mean(image), np.std(image), np.median(image)])
+    
+    def _extract_traditional_features(self, img_array: np.ndarray) -> np.ndarray:
+        """Extract traditional image processing features as complement to deep learning"""
         
-        # Ensure feature vector is consistent length and normalized
-        feature_array = np.array(features, dtype=np.float32)
+        # Extract multiple types of features for robust comparison
+        features = []
         
-        # Multi-level normalization for better discrimination
-        feature_array = self._multi_level_normalization(feature_array)
+        # 1. Raw pixel hash (most discriminative)
+        # Create a hash of the raw pixels for exact matching
+        pixel_hash = hashlib.sha256(img_array.tobytes()).hexdigest()
+        # Convert hex to numerical features
+        hash_features = [int(pixel_hash[i:i+2], 16) for i in range(0, min(64, len(pixel_hash)), 2)]
+        features.extend(hash_features)
         
-        # Add ultra-discriminative power enhancement
-        feature_array = self._ultra_discriminative_enhancement(feature_array, modality)
+        # 2. Reduced pixel sampling for key discriminative features
+        # Sample every 4th pixel to reduce noise sensitivity while maintaining uniqueness
+        sampled_pixels = img_array[::4, ::4].flatten()
+        features.extend(sampled_pixels[:1000])  # Limit to 1000 features
         
-        return feature_array
+        # 3. Histogram features (intensity distribution) - more bins for detail
+        hist, _ = np.histogram(img_array.flatten(), bins=128, range=(0, 1))
+        hist = hist.astype(np.float32) / np.sum(hist)  # Normalize
+        features.extend(hist)
+        
+        # 4. Statistical features
+        features.extend([
+            np.mean(img_array),
+            np.std(img_array),
+            np.median(img_array),
+            np.percentile(img_array, 25),
+            np.percentile(img_array, 75),
+            np.min(img_array),
+            np.max(img_array)
+        ])
+        
+        # 5. Texture features using Local Binary Pattern (if available)
+        if SKIMAGE_AVAILABLE:
+            from skimage.feature import local_binary_pattern
+            radius = 3
+            n_points = 8 * radius
+            lbp = local_binary_pattern(img_array, n_points, radius, method='uniform')
+            lbp_hist, _ = np.histogram(lbp.flatten(), bins=n_points + 2, range=(0, n_points + 2))
+            lbp_hist = lbp_hist.astype(np.float32) / np.sum(lbp_hist)
+            features.extend(lbp_hist)
+        else:
+            # Fallback: simple texture features
+            # Calculate variance in local patches
+            patch_size = 8
+            texture_features = []
+            for i in range(0, img_array.shape[0] - patch_size, patch_size):
+                for j in range(0, img_array.shape[1] - patch_size, patch_size):
+                    patch = img_array[i:i+patch_size, j:j+patch_size]
+                    texture_features.append(np.var(patch))
+            features.extend(texture_features[:128])  # Limit to 128 features for more detail
+        
+        # 6. Edge features using Sobel operator (if available)
+        if SKIMAGE_AVAILABLE:
+            from skimage.filters import sobel
+            edges = sobel(img_array)
+            edge_hist, _ = np.histogram(edges.flatten(), bins=128, range=(0, 1))
+            edge_hist = edge_hist.astype(np.float32) / np.sum(edge_hist)
+            features.extend(edge_hist)
+        else:
+            # Fallback: simple edge detection using gradients
+            grad_x = np.diff(img_array, axis=1)
+            grad_y = np.diff(img_array, axis=0)
+            edges = np.sqrt(grad_x[:-1, :]**2 + grad_y[:, :-1]**2)
+            edge_hist, _ = np.histogram(edges.flatten(), bins=128, range=(0, 1))
+            edge_hist = edge_hist.astype(np.float32) / np.sum(edge_hist)
+            features.extend(edge_hist)
+        
+        # 7. Frequency features
+        frequency_features = self._extract_frequency_features(img_array)
+        features.extend(frequency_features)
+        
+        return np.array(features, dtype=np.float32)
     
     def _extract_face_region(self, image_rgb: np.ndarray) -> np.ndarray:
         """

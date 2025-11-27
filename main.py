@@ -32,6 +32,17 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Biometric Authentication System (minimal debug mode)...")
     
     try:
+        # Initialize database tables
+        from core.database import engine, Base
+        from user import User
+        from admin_user import AdminUser
+        from biometric_data import BiometricData
+        from login_attempt import LoginAttempt
+        
+        logger.info("Creating database tables...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully!")
+        
         logger.info("Minimal startup completed successfully!")
         
     except Exception as e:

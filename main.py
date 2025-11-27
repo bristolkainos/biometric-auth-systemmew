@@ -43,6 +43,37 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully!")
         
+        # Create default admin user if it doesn't exist
+        from core.database import SessionLocal
+        from passlib.context import CryptContext
+        
+        db = SessionLocal()
+        try:
+            existing_admin = db.query(AdminUser).filter(AdminUser.username == "admin").first()
+            if not existing_admin:
+                pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+                hashed_password = pwd_context.hash("Admin@123")
+                
+                admin_user = AdminUser(
+                    username="admin",
+                    email="admin@biometric-auth.com",
+                    password_hash=hashed_password,
+                    first_name="System",
+                    last_name="Administrator",
+                    is_super_admin=True,
+                    is_active=True
+                )
+                db.add(admin_user)
+                db.commit()
+                logger.info("Default admin user created successfully! (username: admin, password: Admin@123)")
+            else:
+                logger.info("Admin user already exists")
+        except Exception as e:
+            logger.error(f"Error creating admin user: {e}")
+            db.rollback()
+        finally:
+            db.close()
+        
         logger.info("Minimal startup completed successfully!")
         
     except Exception as e:

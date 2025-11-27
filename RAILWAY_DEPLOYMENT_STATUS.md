@@ -7,7 +7,7 @@
 
 ## 🔄 Current Status
 - **Backend**: Deploying to Railway (5-10 minutes)
-- **URL**: https://backend-production-9ec1.up.railway.app
+- **URL**: https://backend-production-712f.up.railway.app
 - **Build**: In progress with fixed dependencies
 
 ## 📋 What Was Fixed
@@ -26,13 +26,13 @@ sqlalchemy==2.0.25  # Single consistent version
 ## 🎯 Next Steps
 
 1. **Wait 5-10 minutes** for Railway deployment
-2. **Test backend**: `curl https://backend-production-9ec1.up.railway.app`
+2. **Test backend**: `curl https://backend-production-712f.up.railway.app`
 3. **Enable GitHub Pages** if not done yet
 4. **Test complete system** once both are live
 
 ## 🌐 Expected URLs
 - **Frontend**: https://bristolkainos.github.io/biometric-auth-systemmew
-- **Backend**: https://backend-production-9ec1.up.railway.app
+- **Backend**: https://backend-production-712f.up.railway.app
 
 ## ⏱️ Timeline
 - **Upload**: ✅ Complete

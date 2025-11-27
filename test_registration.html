@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Registration</title>
+</head>
+<body>
+    <h1>Test Registration API</h1>
+    <button onclick="testRegistration()">Test Register User "frees"</button>
+    <pre id="result"></pre>
+
+    <script>
+    async function testRegistration() {
+        const resultEl = document.getElementById('result');
+        resultEl.textContent = 'Sending request...';
+        
+        // Create a small 1x1 pixel PNG image
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'red';
+        ctx.fillRect(0, 0, 1, 1);
+        
+        // Get base64 WITHOUT the data URL prefix
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Data = dataUrl.split(',')[1];
+        
+        console.log('Base64 length:', base64Data.length);
+        console.log('Base64 preview:', base64Data.substring(0, 50));
+        
+        const data = {
+            username: 'frees',
+            email: 'freesdom@gmail.com',
+            password: 'Password123!',
+            first_name: 'dom',
+            last_name: 'frees',
+            biometric_data: [
+                {
+                    biometric_type: 'fingerprint',
+                    image_data: base64Data
+                },
+                {
+                    biometric_type: 'face',
+                    image_data: base64Data
+                }
+            ]
+        };
+        
+        try {
+            const response = await fetch('https://backend-production-712f.up.railway.app/api/v1/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            resultEl.textContent = JSON.stringify(result, null, 2);
+            console.log('Result:', result);
+        } catch (error) {
+            resultEl.textContent = 'Error: ' + error.message;
+            console.error('Error:', error);
+        }
+    }
+    </script>
+</body>
+</html>

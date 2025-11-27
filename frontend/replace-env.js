@@ -4,7 +4,7 @@ const path = require('path');
 // Replace environment variables in built files at runtime
 function replaceEnvInBuiltFiles() {
   const buildDir = path.join(__dirname, 'build', 'static', 'js');
-  const apiUrl = process.env.REACT_APP_API_URL || 'https://backend-production-9ec1.up.railway.app/api/v1';
+  const apiUrl = process.env.REACT_APP_API_URL || 'https://backend-production-712f.up.railway.app/api/v1';
   
   console.log(`Replacing localhost references with: ${apiUrl}`);
   

@@ -6,7 +6,7 @@ WORKDIR /app
 # Set production environment and API URL
 ENV NODE_ENV=production
 ENV CI=false
-ENV REACT_APP_API_URL=https://backend-production-9ec1.up.railway.app/api/v1
+ENV REACT_APP_API_URL=https://backend-production-712f.up.railway.app/api/v1
 ENV REACT_APP_ENVIRONMENT=production
 
 # Copy package files

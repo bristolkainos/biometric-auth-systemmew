@@ -13,7 +13,8 @@ ENV REACT_APP_ENVIRONMENT=production
 COPY package*.json ./
 
 # Install dependencies (including dev deps needed for build)
-RUN npm install && npm cache clean --force
+# Use --legacy-peer-deps to handle peer dependency conflicts
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 # Copy source code
 COPY . .

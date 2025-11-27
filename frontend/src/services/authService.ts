@@ -366,15 +366,9 @@ class AuthService {
   }
 
   async getUserDashboardData(userId: number): Promise<any> {
-    // Fetch specific user details for admin
-    const response = await api.get(`/admin/users/${userId}`);
-    // Return in expected shape for UserDashboardPage
-    return {
-      user: response.data,
-      analytics: {},
-      login_attempts: [],
-      biometric_methods: []
-    };
+    // Fetch current user's dashboard data
+    const response = await api.get(`/users/dashboard`);
+    return response.data;
   }
 
   async updateUserStatus(userId: number, isActive: boolean): Promise<any> {
